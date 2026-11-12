@@ -1,0 +1,70 @@
+{
+  "tipo": "Teste lexical local; exemplos pequenos e conhecidos, sem geracao real.",
+  "hit_rate_top3": 1.0,
+  "rejeicao_fora_de_base": 1.0,
+  "casos": [
+    {
+      "pergunta": "Como funciona a contagem de pessoas no distrito?",
+      "fonte_esperada": "BS-01",
+      "fontes_recuperadas": [
+        "BS-01",
+        "BS-04"
+      ],
+      "passou": true
+    },
+    {
+      "pergunta": "O que significa sem contato e pendente de confirmacao?",
+      "fonte_esperada": "BS-02",
+      "fontes_recuperadas": [
+        "BS-02",
+        "BS-01"
+      ],
+      "passou": true
+    },
+    {
+      "pergunta": "Como evitar duplicidade com varios enderecos?",
+      "fonte_esperada": "BS-03",
+      "fontes_recuperadas": [
+        "BS-03"
+      ],
+      "passou": true
+    },
+    {
+      "pergunta": "Zero cadastros significa ausencia de perigo?",
+      "fonte_esperada": "BS-04",
+      "fontes_recuperadas": [
+        "BS-04"
+      ],
+      "passou": true
+    },
+    {
+      "pergunta": "Quem toma a decisao de atendimento?",
+      "fonte_esperada": "BS-05",
+      "fontes_recuperadas": [
+        "BS-05"
+      ],
+      "passou": true
+    },
+    {
+      "pergunta": "Posso enviar nomes contatos e enderecos individuais?",
+      "fonte_esperada": "BS-06",
+      "fontes_recuperadas": [
+        "BS-06"
+      ],
+      "passou": true
+    },
+    {
+      "pergunta": "Receita culinaria de bolo chocolate",
+      "fonte_esperada": null,
+      "fontes_recuperadas": [],
+      "passou": true
+    },
+    {
+      "pergunta": "Programacao futebol campeonato brasileiro",
+      "fonte_esperada": null,
+      "fontes_recuperadas": [],
+      "passou": true
+    }
+  ],
+  "limitacao": "Nao representa acuracia da IA, seguranca operacional nem generalizacao."
+}

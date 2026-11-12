@@ -1,0 +1,7 @@
+Validacao local da versao 0.1.0
+Comando: python -m unittest discover -s tests -v
+Resultado observado: Ran 15 tests in 0.097s — OK
+API, contratos e adaptador do Gemini com transporte simulado. Nenhuma chamada real ao provedor.
+Aviso nao bloqueante do ambiente: Starlette recomenda httpx2 para seu TestClient em versoes futuras.
+Smoke HTTP local: health, Swagger e POST autenticado OK; total em acompanhamento 18.
+Configurador: chave gerada e .env preservado na segunda execucao.
