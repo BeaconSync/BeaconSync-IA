@@ -1,0 +1,38 @@
+[
+  {
+    "id": "BS-01",
+    "titulo": "Contagem e situacao do distrito no mapa",
+    "origem": "Proposta BeaconSync: mapa de risco por distrito; adaptacao para o contrato inicial v0.1",
+    "texto": "A contagem de pessoas em acompanhamento no distrito soma precisa de ajuda, sem contato e pendente de confirmacao. Pessoas confirmadas seguras ou resgatadas ficam fora dessa contagem. Cada pessoa deve aparecer uma unica vez, no endereco atual dentro da area do alerta. A contagem depende de dados cadastrados e nao mede sozinha o risco ambiental."
+  },
+  {
+    "id": "BS-02",
+    "titulo": "Sem contato e confirmacao pendente",
+    "origem": "Proposta BeaconSync: durante a crise; adaptacao para o contrato inicial v0.1",
+    "texto": "Sem contato significa que um responsavel informou nao conseguir contato com a pessoa. Pendente de confirmacao significa que ainda nao ha resposta registrada. Essas situacoes nao confirmam que a pessoa esta segura. A proposta preve pedidos de resgate para precisa de ajuda e sem contato; a regra deve ser implementada pelo backend responsavel."
+  },
+  {
+    "id": "BS-03",
+    "titulo": "Endereco atual e duplicidade de pessoas",
+    "origem": "Proposta BeaconSync: cadastro e varios responsaveis",
+    "texto": "Uma pessoa pode ter varios enderecos e varios responsaveis, mas possui um unico registro valido. O mapa utiliza somente o endereco atual. O backend deve consolidar a situacao mais recente por pessoa e alerta antes de enviar os totais, evitando duplicar pessoas ou pedidos."
+  },
+  {
+    "id": "BS-04",
+    "titulo": "Cores do mapa e limites da interpretacao",
+    "origem": "Proposta BeaconSync: mapa de risco por distrito; faixas ainda nao definidas pelo grupo",
+    "texto": "As cores representam faixas de quantidade de pessoas em acompanhamento no distrito. As faixas numericas ainda precisam ser acordadas pelo grupo. Distritos fora da area do alerta nao recebem cor. Zero cadastros nao significa ausencia de pessoas vulneraveis nem ausencia de perigo. Dados indisponiveis devem ser diferenciados de uma contagem conhecida igual a zero."
+  },
+  {
+    "id": "BS-05",
+    "titulo": "Decisao humana e limites da IA",
+    "origem": "Proposta BeaconSync: ordem de atendimento; limite do prototipo de IA v0.1",
+    "texto": "A decisao de atendimento e responsabilidade do agente autorizado. Esta API apresenta um boletim e explica os dados, sem determinar uma ordem de resgate. Nao preve enchentes, nao diagnostica pessoas e nao fornece instrucoes operacionais de salvamento. As analises geradas precisam ser conferidas com os dados e fontes."
+  },
+  {
+    "id": "BS-06",
+    "titulo": "Privacidade e acesso autorizado",
+    "origem": "Proposta BeaconSync: privacidade e seguranca; contrato de IA v0.1",
+    "texto": "A analise recebe dados agregados por distrito. Nao enviar nomes de pessoas, contatos, documentos ou enderecos individuais na pergunta. O backend deve autorizar o usuario e a area consultada antes de chamar a IA. A chave de servico pertence ao servidor e nao deve ser incluida no aplicativo mobile."
+  }
+]
