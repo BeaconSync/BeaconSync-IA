@@ -1,0 +1,14 @@
+{
+  "alerta_id": "alerta-demonstracao-01",
+  "distrito_id": "distrito-demonstracao-01",
+  "distrito_nome": "Distrito Exemplo (dados ficticios)",
+  "atualizado_em": "2026-11-12T12:00:00-03:00",
+  "situacoes": {
+    "precisa_ajuda": 10,
+    "sem_contato": 5,
+    "pendente_confirmacao": 3,
+    "segura": 4,
+    "resgatada": 2
+  },
+  "pergunta": "Como interpretar a contagem de pessoas em acompanhamento no distrito?"
+}

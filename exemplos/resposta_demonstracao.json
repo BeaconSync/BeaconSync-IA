@@ -1,0 +1,36 @@
+{
+  "id_analise": "ed1239c9-887e-46ac-91da-d82c64444a87",
+  "modo": "demonstracao",
+  "status": "DEMONSTRACAO",
+  "modelo": null,
+  "alerta_id": "alerta-demonstracao-01",
+  "distrito_id": "distrito-demonstracao-01",
+  "dados_atualizados_em": "2026-11-12T19:11:58.153135Z",
+  "gerado_em": "2026-11-12T19:11:58.156469Z",
+  "total_cadastrado": 24,
+  "total_acompanhamento": 18,
+  "boletim_dados": "Distrito Exemplo (dados ficticios): 18 pessoas em acompanhamento; 10 precisam de ajuda, 5 sem contato e 3 com confirmacao pendente. 4 confirmadas seguras e 2 resgatadas. Total cadastrado neste recorte: 24.",
+  "analise": "SIMULACAO SEM IA GENERATIVA. Trechos recuperados:\n[BS-01] A contagem de pessoas em acompanhamento no distrito soma precisa de ajuda, sem contato e pendente de confirmacao. Pessoas confirmadas seguras ou resgatadas ficam fora dessa contagem. Cada pessoa deve aparecer uma unica vez, no endereco atual dentro da area do alerta. A contagem depende de dados cadastrados e nao mede sozinha o risco ambiental.\n[BS-04] As cores representam faixas de quantidade de pessoas em acompanhamento no distrito. As faixas numericas ainda precisam ser acordadas pelo grupo. Distritos fora da area do alerta nao recebem cor. Zero cadastros nao significa ausencia de pessoas vulneraveis nem ausencia de perigo. Dados indisponiveis devem ser diferenciados de uma contagem conhecida igual a zero.",
+  "fontes_recuperadas": [
+    {
+      "id": "BS-01",
+      "titulo": "Contagem e situacao do distrito no mapa",
+      "origem": "Proposta BeaconSync: mapa de risco por distrito; adaptacao para o contrato inicial v0.1",
+      "trecho": "A contagem de pessoas em acompanhamento no distrito soma precisa de ajuda, sem contato e pendente de confirmacao. Pessoas confirmadas seguras ou resgatadas ficam fora dessa contagem. Cada pessoa deve aparecer uma unica vez, no endereco atual dentro da area do alerta. A contagem depende de dados cadastrados e nao mede sozinha o risco ambiental.",
+      "similaridade": 0.4255
+    },
+    {
+      "id": "BS-04",
+      "titulo": "Cores do mapa e limites da interpretacao",
+      "origem": "Proposta BeaconSync: mapa de risco por distrito; faixas ainda nao definidas pelo grupo",
+      "trecho": "As cores representam faixas de quantidade de pessoas em acompanhamento no distrito. As faixas numericas ainda precisam ser acordadas pelo grupo. Distritos fora da area do alerta nao recebem cor. Zero cadastros nao significa ausencia de pessoas vulneraveis nem ausencia de perigo. Dados indisponiveis devem ser diferenciados de uma contagem conhecida igual a zero.",
+      "similaridade": 0.2527
+    }
+  ],
+  "avisos": [
+    "Prototipo academico; a decisao operacional pertence ao agente autorizado.",
+    "Contagens recebidas do backend; este servico nao verifica pessoas no banco.",
+    "Fontes recuperadas nao garantem que toda afirmacao gerada esteja correta.",
+    "Modo demonstracao nao comprova o requisito de IA generativa."
+  ]
+}
