@@ -1,135 +1,445 @@
-# BeaconSync IA — primeira versão (0.1.0)
+# BeaconSync IA
 
-API acadêmica para explicar a situação de um distrito durante um alerta. Recebe contagens agregadas do backend, produz um boletim numérico por código e recupera documentos do projeto para fundamentar uma explicação com Gemini.
+API de inteligência artificial do projeto **BeaconSync**, desenvolvida para a disciplina **Disruptive Architectures: IoT, IoB & Generative IA**, da Global Solution 2026/2 — CitizenTech.
 
-**Estado:** primeira versão local, com simulação sem custo e integração real preparada. Não está publicada, não está conectada a Java/.NET/mobile e ainda não foi validada com uma chave real. A simulação não atende sozinha ao requisito de IA generativa.
+A funcionalidade ajuda a interpretar dados agregados de pessoas vulneráveis durante alertas, apresentando um boletim numérico e uma explicação fundamentada na base de conhecimento do projeto.
 
-## 1. Rodar no Windows, pelo terminal do VS Code
+O serviço utiliza **FastAPI**, **RAG lexical com TF-IDF** e **Google Gemini**, com publicação no **Render**.
 
-Instale Python 3.12 ou posterior e abra esta pasta (a que contém `main.py`). No PowerShell:
+## Integrantes
+
+| Nome completo | RM |
+|---|---|
+| PREENCHER | PREENCHER |
+| PREENCHER | PREENCHER |
+| PREENCHER | PREENCHER |
+
+**Turma:** PREENCHER
+
+## Vídeo de demonstração
+
+[▶ Assistir à demonstração do BeaconSync IA](https://youtu.be/ciTomOALB-c)
+
+## Serviço publicado
+
+| Recurso | Endereço |
+|---|---|
+| URL base | https://beaconsync-ia.onrender.com |
+| Verificação do serviço | https://beaconsync-ia.onrender.com/health |
+| Documentação interativa — Swagger | https://beaconsync-ia.onrender.com/docs |
+| Contrato OpenAPI | https://beaconsync-ia.onrender.com/openapi.json |
+
+A rota de análise é:
+
+```http
+POST https://beaconsync-ia.onrender.com/ia/analisar-distrito
+```
+
+A análise exige autenticação pelo cabeçalho `X-API-Key`.
+
+O endpoint `/health` informa se a aplicação está respondendo e qual modo está configurado. Ele não testa a chave, a cota ou a disponibilidade do Gemini.
+
+## 1. Problema e objetivo
+
+Durante uma situação de risco, responsáveis e equipes de apoio precisam compreender informações como:
+
+- Quantas pessoas precisam de ajuda.
+- Quantas estão sem contato.
+- Quantas aguardam confirmação.
+- Quantas foram confirmadas como seguras.
+- Quantas foram resgatadas.
+
+O BeaconSync IA transforma essas contagens em um boletim e utiliza a base de conhecimento para explicar os conceitos envolvidos.
+
+A funcionalidade apoia a interpretação das informações. Ela não prevê enchentes, não determina prioridades de resgate e não substitui profissionais ou autoridades.
+
+## 2. Funcionamento
+
+1. O aplicativo solicita uma análise ao backend Java.
+2. O Java valida as permissões e prepara os dados agregados do alerta e do distrito.
+3. A API Python recebe as contagens e a pergunta.
+4. O sistema calcula os totais e monta o boletim numérico por código.
+5. O recuperador busca trechos relacionados à pergunta.
+6. No modo `gemini`, os dados e os trechos recuperados são enviados ao modelo generativo.
+7. A resposta retorna ao Java e é apresentada no aplicativo.
+
+O cálculo dos totais não depende do modelo:
+
+```text
+total_acompanhamento =
+    precisa_ajuda + sem_contato + pendente_confirmacao
+
+total_cadastrado =
+    precisa_ajuda + sem_contato + pendente_confirmacao
+    + segura + resgatada
+```
+
+Cada pessoa deve aparecer em apenas uma situação no mesmo recorte. A deduplicação e a classificação são responsabilidades do backend que prepara os dados.
+
+## 3. Arquitetura
+
+```mermaid
+flowchart TD
+    M["Aplicativo Mobile"] --> J["API Java"]
+    J --> D[("Banco de dados")]
+    J --> P["API Python no Render"]
+    P --> R["Recuperação na base de conhecimento"]
+    R --> G["Google Gemini"]
+    G --> P
+    P --> J
+    J --> M
+```
+
+### Responsabilidades
+
+| Componente | Responsabilidade |
+|---|---|
+| Mobile | Exibir o mapa, as contagens e a análise |
+| Java | Autenticar usuários, autorizar o acesso e preparar os dados enviados à IA |
+| Python | Validar a entrada, calcular o boletim, recuperar fontes e consultar o Gemini |
+| Base de conhecimento | Fornecer trechos utilizados para fundamentar a explicação |
+| Gemini | Gerar a explicação a partir dos dados e documentos recebidos |
+| .NET | Gerenciar o cadastro de voluntariado e sua disponibilidade, em um fluxo separado da análise |
+
+O mobile acessa a IA por meio do Java. A chave do serviço Python não deve ser incluída no aplicativo.
+
+A API Python não acessa diretamente o Oracle, não cadastra pessoas e não gera os polígonos do mapa.
+
+## 4. IA generativa e aprofundamento em RAG
+
+O aprofundamento técnico escolhido é **RAG básico**, combinando recuperação de documentos com geração de texto.
+
+### Recuperação
+
+A implementação utiliza:
+
+- Normalização do texto e dos acentos.
+- Remoção de palavras comuns.
+- Representação dos documentos por TF-IDF.
+- Comparação por similaridade cosseno.
+- Recuperação de até três trechos acima do limiar experimental de `0,12`.
+
+### Geração
+
+Os trechos recuperados, a pergunta e os dados agregados são enviados ao Gemini. O modelo recebe instruções para:
+
+- Responder em português brasileiro.
+- Utilizar os dados e documentos fornecidos.
+- Citar os identificadores dos trechos utilizados.
+- Reconhecer quando a base não permite responder.
+- Não inventar números, previsões ou protocolos de resgate.
+- Preservar a decisão operacional humana.
+
+### Justificativa
+
+O RAG permite fornecer contexto específico do BeaconSync ao modelo sem treinar um modelo próprio.
+
+A recuperação lexical foi escolhida pela simplicidade, transparência e facilidade de reprodução. Como depende de palavras compartilhadas, pode apresentar dificuldades com sinônimos e perguntas formuladas de maneiras diferentes.
+
+A similaridade retornada indica proximidade lexical, não uma probabilidade de a resposta estar correta.
+
+### Base de conhecimento
+
+O arquivo `dados/base_conhecimento.json` contém seis trechos sobre conceitos do projeto, incluindo contagens, situações, duplicidade, privacidade e limites de atuação.
+
+Os textos são definições do BeaconSync. Não constituem protocolos oficiais da Defesa Civil.
+
+## 5. Tecnologias
+
+| Tecnologia | Uso |
+|---|---|
+| Python | Implementação do serviço |
+| FastAPI | API REST e documentação OpenAPI |
+| Pydantic | Validação dos contratos de entrada e saída |
+| Uvicorn | Servidor da aplicação |
+| HTTPX | Comunicação HTTP com o Gemini |
+| python-dotenv | Carregamento das configurações locais |
+| TF-IDF e similaridade cosseno | Recuperação lexical |
+| Google Gemini | Geração da explicação |
+| Render | Hospedagem da API |
+| unittest | Testes automatizados |
+
+As versões das dependências estão fixadas em `requirements.txt`.
+
+## 6. Configuração
+
+### Variáveis de ambiente
+
+| Variável | Finalidade |
+|---|---|
+| `IA_MODO` | Define `gemini` ou `demonstracao` |
+| `SERVICE_API_KEY` | Chave de acesso ao serviço Python, com pelo menos 32 caracteres |
+| `GEMINI_API_KEY` | Credencial do provedor Gemini |
+| `GEMINI_MODEL` | Identificador do modelo disponível na conta, sem o prefixo `models/` |
+
+Para geração real:
+
+```dotenv
+IA_MODO=gemini
+SERVICE_API_KEY=SUA_CHAVE_PRIVADA_DE_SERVICO
+GEMINI_API_KEY=SUA_CHAVE_DO_GEMINI
+GEMINI_MODEL=IDENTIFICADOR_DO_MODELO_DA_SUA_CONTA
+```
+
+Os valores acima são exemplos e precisam ser substituídos nas configurações do servidor.
+
+Não publique credenciais no GitHub, no README, no vídeo ou no aplicativo.
+
+### Configuração no Java
+
+```dotenv
+IA_BASE_URL=https://beaconsync-ia.onrender.com
+IA_SERVICE_API_KEY=MESMO_VALOR_DE_SERVICE_API_KEY_DO_PYTHON
+```
+
+O Java envia a chave ao Python no cabeçalho:
+
+```http
+X-API-Key: <chave-do-servico>
+```
+
+Essa chave é diferente do JWT utilizado pelos usuários no aplicativo.
+
+### Configuração no Render
+
+**Build Command:**
+
+```bash
+pip install -r requirements.txt
+```
+
+**Start Command:**
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+**Health Check Path:**
+
+```text
+/health
+```
+
+Configure as variáveis na área de ambiente do serviço.
+
+O arquivo `render.yaml` mantém `IA_MODO=demonstracao` como configuração inicial. Para utilizar geração real, confira se o serviço publicado está configurado com `IA_MODO=gemini`, chave e modelo válidos.
+
+## 7. Executar localmente
+
+Requisito: Python 3.12 ou posterior compatível com as dependências.
+
+Clone o repositório:
+
+```bash
+git clone https://github.com/BeaconSync/BeaconSync-IA.git
+cd BeaconSync-IA
+```
+
+No PowerShell:
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe configurar.py
+```
+
+Revise o `.env` gerado. Para usar Gemini, configure o modo, a credencial e o modelo.
+
+Inicie a aplicação:
+
+```powershell
 .\.venv\Scripts\python.exe -m uvicorn main:app --reload
 ```
 
-Se o computador tiver outra versão compatível, use `py -m venv .venv`. Não é necessário ativar o ambiente virtual nem alterar a política de execução do PowerShell.
+Acesse:
 
-Abra http://127.0.0.1:8000/docs. O endereço http://127.0.0.1:8000/health deve retornar `status: ok`.
+- Swagger: http://127.0.0.1:8000/docs
+- Health: http://127.0.0.1:8000/health
 
-1. Abra `.env` no VS Code e copie somente o valor de `SERVICE_API_KEY`.
-2. No Swagger, clique em **Authorize**, cole a chave e confirme.
-3. Abra `POST /ia/analisar-distrito` e clique em **Try it out**.
-4. Cole o conteúdo de `exemplos/distrito.json`; ajuste `atualizado_em` para a data/hora atual com fuso (ex.: `-03:00`).
-5. Clique em **Execute**. Espere HTTP 200, `status: DEMONSTRACAO`, 18 pessoas em acompanhamento e 24 cadastradas.
+Reinicie a aplicação após alterar as variáveis de ambiente.
 
-O exemplo antigo continua válido, mas retorna aviso de dados desatualizados. A chave gerada protege a API entre servidores; nunca coloque essa chave no código mobile.
+## 8. Utilizar a API
 
-## 2. O que cada arquivo faz
+### Autenticação
 
-| Arquivo | Função |
+No Swagger:
+
+1. Clique em **Authorize**.
+2. Informe o valor de `SERVICE_API_KEY`.
+3. Abra `POST /ia/analisar-distrito`.
+4. Clique em **Try it out**.
+5. Preencha o corpo e execute.
+
+### Exemplo de entrada
+
+Os dados abaixo são fictícios. Atualize `atualizado_em` para o instante correspondente aos dados, incluindo o fuso horário.
+
+```json
+{
+  "alerta_id": "alerta-exemplo-01",
+  "distrito_id": "distrito-exemplo-01",
+  "distrito_nome": "Distrito Exemplo",
+  "atualizado_em": "2026-11-19T14:00:00-03:00",
+  "situacoes": {
+    "precisa_ajuda": 10,
+    "sem_contato": 5,
+    "pendente_confirmacao": 3,
+    "segura": 4,
+    "resgatada": 2
+  },
+  "pergunta": "Como interpretar a contagem de pessoas em acompanhamento no distrito?"
+}
+```
+
+Nesse exemplo, os totais esperados são:
+
+- **18 pessoas em acompanhamento.**
+- **24 pessoas cadastradas no recorte.**
+
+### Validações
+
+- Quantidades devem ser inteiros entre `0` e `1.000.000`.
+- Valores negativos, frações e booleanos não são aceitos como quantidades.
+- A data deve incluir fuso horário.
+- Datas mais de cinco minutos no futuro são rejeitadas.
+- Dados com mais de quinze minutos geram um aviso.
+- Campos adicionais não previstos no contrato são rejeitados.
+- A pergunta, quando informada, deve ter entre 5 e 500 caracteres.
+
+### Resposta
+
+A resposta inclui:
+
+- Identificador da análise.
+- Modo, status e modelo utilizado.
+- Identificadores do alerta e do distrito.
+- Data dos dados e data de geração.
+- Totais calculados.
+- Boletim numérico.
+- Explicação.
+- Fontes recuperadas.
+- Avisos e limitações.
+
+| Status | Significado |
 |---|---|
-| `main.py` | Rotas, autenticação, boletim e fluxo da análise |
-| `app/schemas.py` | Contrato JSON e validação |
-| `app/rag.py` | Busca lexical TF-IDF e similaridade cosseno |
-| `app/provider.py` | Integração REST com Gemini e tratamento de falhas |
-| `dados/base_conhecimento.json` | Seis trechos curtos do projeto, com origem identificada |
-| `exemplos/distrito.json` | Entrada fictícia para Swagger |
-| `tests/test_api.py` | Testes da API e do adaptador com provedor simulado |
-| `avaliar_rag.py` | Avaliação local da recuperação |
-| `docs/INTEGRACAO.md` | Contrato para alinhar com Java/.NET/mobile |
-| `docs/AVALIACAO.md` | Evidências e roteiro para validar geração real |
+| `GERADO` | A explicação foi recebida do Gemini |
+| `SEM_BASE` | Nenhum trecho atingiu o limiar de recuperação; o Gemini não foi chamado |
+| `DEMONSTRACAO` | Resposta de simulação, sem geração por modelo |
 
-## 3. Ativar IA generativa real
+O modo de demonstração auxilia no desenvolvimento, mas não comprova o funcionamento da IA generativa.
 
-Crie ou consulte sua chave no [Google AI Studio](https://aistudio.google.com/). No `.env` local:
+### Erros
 
-```dotenv
-IA_MODO=gemini
-SERVICE_API_KEY=mantenha_a_chave_local_gerada
-GEMINI_API_KEY=preencha_sua_chave_real
-GEMINI_MODEL=preencha_o_id_de_um_modelo_disponivel_na_sua_conta
-```
+| HTTP | Significado |
+|---|---|
+| `401` | Chave de serviço ausente ou inválida |
+| `422` | Dados de entrada inválidos |
+| `502` | Falha externa ou resposta incompleta, vazia ou bloqueada |
+| `503` | Falha de conexão, cota ou configuração do provedor |
+| `504` | Tempo de resposta do provedor excedido |
 
-Os dois últimos valores acima são placeholders, não credenciais/modelos válidos. Copie o identificador de um modelo que suporte `generateContent`, sem o prefixo `models/`. Não fixamos um nome porque disponibilidade, limites e permissões dependem da conta. Verifique a cota antes de testar. Não envie sua chave em mensagens ou commits.
+Uma falha na análise deve ser apresentada ao usuário sem apagar o mapa e as contagens já carregadas.
 
-Pare o servidor com Ctrl+C e execute novamente o comando do Uvicorn. Alterações no `.env` exigem reinício. Repita a solicitação no Swagger. Uma geração bem-sucedida retorna `status: GERADO` e o modelo configurado. `SEM_BASE` significa que a busca não encontrou fontes; nesse caso não há chamada ao Gemini. Uma falha externa retorna erro, nunca uma resposta simulada disfarçada de IA.
+## 9. Testes e avaliação
 
-## 4. Como o RAG funciona
-
-1. Carrega os trechos locais ao iniciar o servidor.
-2. Normaliza acentos, separa palavras e remove palavras comuns.
-3. Calcula vetores TF-IDF para os documentos.
-4. Compara a pergunta com cada documento por similaridade cosseno.
-5. Recupera até três trechos acima do limiar experimental 0,12.
-6. Envia pergunta, dados agregados e trechos ao modelo.
-7. Retorna a explicação e os trechos recuperados para conferência.
-
-É **RAG lexical básico**, sem embeddings neurais ou treino de um classificador. TF-IDF é a técnica de recuperação; Gemini faz a geração. Não há necessidade de sensores neste protótipo. A busca lexical é simples e reproduzível, mas perde sinônimos e pode recuperar trechos irrelevantes. O limiar precisa ser avaliado com novas perguntas.
-
-Os documentos são adaptações da proposta do grupo e definições deste contrato inicial, **não protocolos oficiais da Defesa Civil**. Sua origem e status estão registrados. Para ampliar o escopo, adicionar material oficial revisado com URL, data e trechos próprios; não inventar orientações de salvamento. O conteúdo atual permite explicar o aplicativo, não orientar resgates reais.
-
-## 5. Arquitetura proposta
-
-```mermaid
-flowchart TD
-    M[Mobile] --> B[Backend Java ou .NET]
-    B --> D[(Banco de dados)]
-    B --> P[API Python]
-    P --> R[Base de conhecimento]
-    P --> G[Gemini]
-```
-
-O backend autoriza usuário/alerta/distrito, agrega dados e envia o recorte à API Python. O mobile desenha o mapa com dados do backend e GeoJSON. A análise é uma chamada separada: falha no Gemini não impede mostrar o mapa. O backend deve manter os dados e devolver erros de IA adequadamente.
-
-Esta API não cadastra pessoas, não consulta Oracle, não calcula polígonos, não fornece um GeoJSON e não implementa o endpoint do mapa. Esses pontos dependem dos contratos das outras APIs. Não assumimos a divisão final Java/.NET. Se Java precisar demonstrar Spring AI pela rubrica da sua disciplina, uma chamada HTTP ao Python não comprova automaticamente esse requisito; alinhar uma funcionalidade compatível com o responsável.
-
-## 6. Publicar no Render (após o teste local)
-
-1. Crie um repositório para o serviço e envie os arquivos, sem `.env` e sem `.venv`.
-2. Crie um **Web Service** no Render conectado a esse repositório.
-3. Selecione Python e configure:
-   - Build: `pip install -r requirements.txt`
-   - Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - Health check: `/health`
-4. Configure as variáveis do `.env` na área de ambiente do serviço. Gere uma chave exclusiva para `SERVICE_API_KEY`, com pelo menos 32 caracteres; não reutilize a chave de teste.
-5. Para simulação, use `IA_MODO=demonstracao`. Para geração real, use `IA_MODO=gemini` com chave e modelo válidos.
-6. Escolha o plano conforme disponibilidade e custo mostrados no painel. O projeto não depende de um plano específico.
-7. Depois do deploy, teste `/health` e `/docs`. Compartilhe a URL e o contrato com o backend; compartilhe a chave por canal privado.
-
-O `render.yaml` também descreve o serviço para Blueprint. Ele inicia em demonstração; configure o modo e as credenciais no painel quando ativar Gemini.
-
-## 7. Testar e avaliar
+Execute os testes automatizados:
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Execute a avaliação da recuperação:
+
+```powershell
 .\.venv\Scripts\python.exe avaliar_rag.py
 ```
 
-Leia `docs/AVALIACAO.md`. O sucesso dos testes não garante a qualidade das respostas do modelo. Antes da entrega, execute casos reais com a chave, registre modelo/data/resultados e avalie as afirmações contra os documentos.
+Os testes cobrem autenticação, validação, contagem, datas, recuperação e tratamento de falhas, utilizando o provedor simulado.
 
-## 8. Uso responsável e limitações
+O script de RAG avalia:
 
-- Recebe números agregados; não envia registros individuais ao modelo. Pergunta e nome do distrito são texto livre: o backend deve impedir dados pessoais nesses campos; o schema não detecta todo dado pessoal.
-- As cinco situações são mutuamente exclusivas neste contrato. O backend deve deduplicar e classificar cada pessoa uma única vez no mesmo alerta/distrito.
-- A API confia nos totais recebidos: não consegue detectar duplicidade ou contagem incorreta no banco.
-- Boletim e totais são determinísticos. A explicação generativa pode conter erros; as fontes recuperadas não são certificação automática de correção.
-- Não decide quem será resgatado primeiro, não prevê clima e não substitui autoridades. Zero cadastros não significa segurança.
-- Prompts reduzem comportamentos indesejados, mas não eliminam injeção de prompt. O modelo não tem ferramentas nem acesso ao banco.
-- Autenticação por chave de serviço é inicial. Para exposição real: backend com JWT e autorização por órgão/área, controle de taxa, monitoramento e auditoria sem conteúdo sensível. Não chamar este serviço diretamente do mobile com segredo embutido.
+- Se a fonte esperada aparece entre os três primeiros resultados.
+- Se perguntas fora da base são rejeitadas.
 
-## 9. Entrega acadêmica pendente
+Essas métricas avaliam a recuperação em um conjunto pequeno de exemplos conhecidos. Elas não representam a acurácia das respostas generativas.
 
-Preencher integrantes (nome, RM e turma), integrar ao aplicativo, validar geração real, ampliar avaliação e registrar evidências. Tema: apoio à visualização e compreensão de dados de pessoas vulneráveis em alertas. Contribuição pretendida aos ODS 3, 10, 11 e 13: apoiar informação e coordenação; impacto real ainda não medido.
+### Avaliação com Gemini
 
-Uso de IA no desenvolvimento: versão inicial elaborada com apoio do ChatGPT/Codex para implementação, documentação e testes. O grupo deve revisar, compreender e adaptar o código.
+Para registrar evidências de geração real, documente:
 
-## Referências técnicas
+- Pergunta e dados fictícios utilizados.
+- Modelo e data da execução.
+- Resposta recebida.
+- Fontes recuperadas.
+- Coerência com os documentos e com os totais.
+- Limitações ou erros identificados.
 
-- Gemini REST: https://ai.google.dev/api/generate-content
-- RAG: https://docs.langchain.com/oss/python/langchain/retrieval (referência conceitual; LangChain não é dependência)
-- FastAPI no Render: https://render.com/docs/deploy-fastapi
+Inclua casos de funcionamento normal, ausência de dados, pergunta fora do assunto e indisponibilidade do provedor.
 
-Documentação consultada em 12/11/2026. Não há garantia de cota gratuita ou disponibilidade de modelo.
+Os testes automatizados não substituem a avaliação das respostas reais nem a validação do fluxo completo com Java e mobile.
+
+Materiais complementares:
+
+- [Avaliação e limitações](docs/AVALIACAO.md)
+- [Contrato da API Python](docs/INTEGRACAO.md)
+- [Entrada de exemplo](exemplos/distrito.json)
+
+Esses documentos complementares incluem registros da preparação inicial; diferencie essas evidências de testes realizados posteriormente no serviço publicado.
+
+## 10. Segurança e limitações
+
+- A API trabalha com contagens agregadas, sem necessidade de nomes, documentos ou endereços individuais.
+- A pergunta e o nome do distrito são textos livres; o backend deve impedir o envio de informações pessoais nesses campos.
+- As chaves permanecem nos servidores.
+- O Python confia nas contagens recebidas e não verifica os registros no banco.
+- A ausência de cadastros não significa que uma região esteja segura.
+- O RAG pode recuperar trechos inadequados ou deixar de encontrar trechos relevantes.
+- A resposta generativa pode conter erros, mesmo quando apresenta referências.
+- As instruções ao modelo não eliminam completamente tentativas de manipulação do prompt.
+- O serviço não faz previsão meteorológica nem define prioridade de atendimento.
+- O modelo não possui acesso direto ao banco de dados.
+- Não há coleta de sensores nesta implementação; o aprofundamento técnico escolhido é RAG.
+
+## 11. Organização do projeto
+
+| Caminho | Conteúdo |
+|---|---|
+| `main.py` | Aplicação FastAPI, autenticação e fluxo da análise |
+| `app/schemas.py` | Validação dos dados |
+| `app/rag.py` | Recuperação lexical |
+| `app/provider.py` | Comunicação com o Gemini |
+| `dados/base_conhecimento.json` | Base de conhecimento |
+| `exemplos/distrito.json` | Dados fictícios para teste |
+| `tests/` | Testes automatizados |
+| `avaliar_rag.py` | Avaliação da recuperação |
+| `configurar.py` | Preparação das configurações locais |
+| `docs/` | Documentação complementar |
+| `requirements.txt` | Dependências |
+| `render.yaml` | Configuração de publicação |
+| `.env.example` | Exemplo de variáveis sem credenciais |
+
+## 12. Relação com a Global Solution
+
+A proposta utiliza IA generativa para apoiar a compreensão de informações sobre pessoas vulneráveis durante alertas.
+
+O aprofundamento em RAG combina uma base de conhecimento do projeto com geração de texto, permitindo demonstrar recuperação, fundamentação e avaliação das respostas.
+
+A solução se relaciona aos ODS:
+
+- **ODS 3:** Saúde e bem-estar.
+- **ODS 10:** Redução das desigualdades.
+- **ODS 11:** Cidades e comunidades sustentáveis.
+- **ODS 13:** Ação contra a mudança global do clima.
+
+Essas relações representam a contribuição pretendida pelo projeto. O impacto social real ainda não foi mensurado.
+
+## Uso de IA no desenvolvimento
+
+O projeto contou com apoio do ChatGPT/Codex na elaboração de código, documentação e testes. A equipe é responsável por revisar, compreender e validar a solução apresentada.
+
+## Referências
+
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Pydantic](https://docs.pydantic.dev/)
+- [Google Gemini — generateContent](https://ai.google.dev/api/generate-content)
+- [Publicação de FastAPI no Render](https://render.com/docs/deploy-fastapi)
